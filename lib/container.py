@@ -1,4 +1,4 @@
-"""classes for defining game objects, such as Weapons and Armor, as well as Containers to group them together"""
+"""Weapons and Armor, and Containers to hold them"""
 
 from random import randint
 from typing import Iterator
@@ -6,29 +6,22 @@ from typing import List
 
 
 class Object:
-    def __init__(self, name: str, count=1):
+    """An object holds a name, and description. It is a base class"""
+    def __init__(self, name: str, count: int=1, description: str=""):
         self.name = name
-        self.weight = 0
-        self.description = ""
-        self.price = 0
+        self.description = description
         self.count = count
 
-    def set_description(self, txt: str):
-        self.description = txt
-
-    def get_description(self):
-        return self.description
-
     def format(self):
-        if self.count > 1:
-            return f"{self.name} x{self.count}"
-        else:
+        if self.count == 1:
             return self.name
+        return f"{self.name} x{self.count}"
 
 
 class Weapon(Object):
-    def __init__(self, name: str, die: int):
-        super().__init__(name)
+    """Extends Object. Used for weapons (duh)"""
+    def __init__(self, name: str, die: int, count: int=1, description: str=""):
+        super().__init__(name, count=count, description=description)
         if die not in [1, 4, 6, 8, 10, 12, 20]:
             raise AttributeError(f"{die} is not a valid die.")
         self.damage_die = die
@@ -38,18 +31,18 @@ class Weapon(Object):
 
 
 class Armor(Object):
-    def __init__(self, name: str, ac: int):
-        super().__init__(name)
+    """Extends Object. Used for armor (duh)"""
+    def __init__(self, name: str, ac: int, description: str=""):
+        super().__init__(name, description=description)
         self.ac_bonus = ac
+        self.is_stealthy = True
 
 
 class Container:
+    """A container holds a list of Objects, including Armor or Weapons"""
     def __init__(self, name: str):
         self.name = name
         self.items: List[Object] = []
-
-    def as_list(self):
-        return self.items
 
     def __iter__(self) -> Iterator[Object]:
         return iter(self.items)
@@ -79,6 +72,9 @@ class Container:
             self.add(item)
 
     def format(self):
+        if len(self.items) == 0:
+            return f"{self.name} is empty!"
+
         ret = f"{self.name}:\n"
         for i in self.items:
             ret += f"- {i.format()}\n"

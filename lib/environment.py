@@ -1,17 +1,15 @@
 """Classes for managing environments that the player might be in"""
 
-from typing import Callable
-from typing import ClassVar
-from typing import TypeAlias
+from typing import Callable, ClassVar, TypeAlias, Any
 
 import questionary
 
-
-CommandTable: TypeAlias = dict[str, Callable]
+Action: TypeAlias = Callable[[], Any]
+CommandTable: TypeAlias = dict[str, Action]
 
 
 def exec_picker(commands: CommandTable):
-    choices = commands.keys()
+    choices: list[str] = list(commands.keys())
     action = questionary.select(
         message="", choices=choices, instruction=" ", qmark="", pointer=">"
     ).ask()
@@ -30,26 +28,23 @@ class Environment:
 
     global_commands: ClassVar[CommandTable] = {}
 
-    def __init__(self, name):
+    def __init__(self, name: str, text: str=""):
         self.name = name
+        self.text = text
         self.commands: CommandTable = {}
-        self.text = ""
 
-    def add_command(self, trigger: str, action):
+    def add_command(self, trigger: str, action: Action):
         self.commands[trigger] = action
 
-    def command(self, trigger: str):
+    def command(self, trigger: str) -> Callable[[Callable[..., Any]], None]:
         """helper decorator for add_command"""
 
-        def decorator(func):
+        def decorator(func: Callable[..., Any]):
             self.add_command(trigger, func)
 
         return decorator
 
     def extend_commands(self, commands: CommandTable):
-        if not isinstance(commands, CommandTable):
-            raise ValueError("That's not a valid command table. I can't append it")
-
         self.commands |= commands
 
     def rm_command(self, trigger: str):
@@ -58,9 +53,15 @@ class Environment:
         else:
             raise KeyError(f"There is no command with the name {trigger}")
 
-    def show_menu(self, intro=True, show_global_commands=True, err="You haven't added any commands to the environment yet"):
+    def show_menu(
+        self,
+        intro: bool=True,
+        show_global_commands: bool=True,
+        err: str="You haven't added any commands to the environment yet",
+    ):
         commands_len = len(self.commands)
         if show_global_commands and len(Environment.global_commands) != 0:
+
             def open_global_picker():
                 exec_picker(Environment.global_commands)
                 self.show_menu(False)
@@ -75,21 +76,16 @@ class Environment:
         if commands_len > 0:
             exec_picker(new_commands)
         else:
-            raise ValueError(err)
+            print(err)
 
-    def set_text(self, text: str):
-        self.text = text
-
-    def get_text(self):
-        return self.text
-
+    # --- Global Commands
     @staticmethod
-    def add_global_command(trigger: str, action):
+    def add_global_command(trigger: str, action: Action):
         Environment.global_commands[trigger] = action
 
     @staticmethod
-    def global_command(trigger: str):
-        def decorator(func):
+    def global_command(trigger: str) -> Callable[[Callable[..., Any]], None]:
+        def decorator(func: Callable[..., Any]):
             Environment.add_global_command(trigger, func)
 
         return decorator
