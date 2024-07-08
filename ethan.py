@@ -49,4 +49,9 @@ def enter_shop():
     shop.start_shop(player)
     beach.show_menu()
 
+def enter_commbat():
+
+
+
+
 beach.show_menu()
